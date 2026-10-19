@@ -9,12 +9,12 @@ Kheyal is a student-focused productivity workspace. The first release (Phase A) 
 
 ## Status
 
-Milestone 1 (setup and baseline) — in progress. See the PRD for the full roadmap.
+Milestone 1 (setup and baseline) — done. Milestone 2 (design and contracts) — documented in [`docs/`](docs/).
 
 | Area | State |
 |---|---|
 | Backend (Express) | `GET /health` works locally |
-| Database (PostgreSQL 18) | Local `kheyal_dev` reachable via least-privilege role `kheyal_app` |
+| Database (PostgreSQL 18) | Local `kheyal_dev` reachable via least-privilege role `kheyal_app`; schema designed, not yet migrated |
 | Frontend (Next.js) | Not started |
 | Auth, deadlines, reminders, push | Not started |
 
@@ -35,6 +35,13 @@ Kheyal/
 │   ├── src/server.js             # Express entry point
 │   ├── .env.example              # placeholder config template (committed)
 │   └── package.json
+├── docs/
+│   ├── decisions.md              # every decision, decided vs proposed vs open
+│   ├── architecture.md           # components, layers, flows, reminder lifecycle
+│   ├── database.md               # ER diagram, draft DDL, migrations
+│   ├── api-contract.md           # endpoints, payloads, error codes
+│   └── screens.md                # screen flows, UX states, notification copy
+├── .gitattributes
 ├── .gitignore
 └── README.md
 ```
