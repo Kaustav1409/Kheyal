@@ -4,6 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
+import {
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+  getCurrentPushSubscription,
+} from '../../lib/pwa';
 import { Skeleton } from '../../components/Skeleton';
 import styles from './Settings.module.css';
 
@@ -13,11 +19,12 @@ export default function SettingsPage() {
 
   const [notificationPermission, setNotificationPermission] = useState<string>('default');
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [testPushLoading, setTestPushLoading] = useState(false);
   const [bufferHours, setBufferHours] = useState(2);
   const [quietStart, setQuietStart] = useState('23:00');
   const [quietEnd, setQuietEnd] = useState('07:00');
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -26,30 +33,72 @@ export default function SettingsPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotificationPermission(Notification.permission);
-      setPushEnabled(Notification.permission === 'granted');
+    async function checkSubscription() {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setNotificationPermission(Notification.permission);
+        const sub = await getCurrentPushSubscription();
+        setPushEnabled(Boolean(sub) && Notification.permission === 'granted');
+      }
     }
+    checkSubscription();
   }, []);
 
   async function handleTogglePush() {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      alert('Push notifications are not supported in this browser.');
+    if (!isPushSupported()) {
+      setMessage({
+        text: 'Push notifications are not supported in this browser or over insecure HTTP.',
+        type: 'error',
+      });
       return;
     }
 
-    if (!pushEnabled) {
-      const perm = await Notification.requestPermission();
-      setNotificationPermission(perm);
-      if (perm === 'granted') {
+    setPushLoading(true);
+    setMessage(null);
+
+    try {
+      if (!pushEnabled) {
+        await subscribeToPush();
         setPushEnabled(true);
-        setMessage('Push notifications enabled!');
+        setNotificationPermission('granted');
+        setMessage({
+          text: '✓ Push reminders enabled! You will receive timely alerts at 48h, 24h, and 6h before deadlines.',
+          type: 'success',
+        });
       } else {
-        alert('Notification permission was denied. Please allow notifications in your browser settings.');
+        await unsubscribeFromPush();
+        setPushEnabled(false);
+        setMessage({
+          text: 'Push notifications disabled for this device.',
+          type: 'success',
+        });
       }
-    } else {
-      setPushEnabled(false);
-      setMessage('Push notifications disabled.');
+    } catch (err: any) {
+      setMessage({
+        text: err.message || 'Failed to toggle push notifications.',
+        type: 'error',
+      });
+    } finally {
+      setPushLoading(false);
+    }
+  }
+
+  async function handleSendTestPush() {
+    setTestPushLoading(true);
+    setMessage(null);
+
+    try {
+      const res = await api.sendTestPush();
+      setMessage({
+        text: `✓ ${res.message}! Dispatched to ${res.deliveredCount} active subscription(s).`,
+        type: 'success',
+      });
+    } catch (err: any) {
+      setMessage({
+        text: err.message || 'Failed to send test push notification.',
+        type: 'error',
+      });
+    } finally {
+      setTestPushLoading(false);
     }
   }
 
@@ -75,8 +124,19 @@ export default function SettingsPage() {
       </header>
 
       {message && (
-        <div style={{ backgroundColor: '#DEF7EC', color: '#03543F', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-          {message}
+        <div
+          style={{
+            backgroundColor: message.type === 'success' ? '#DEF7EC' : '#FDE8E8',
+            color: message.type === 'success' ? '#03543F' : '#9B1C1C',
+            border: `1px solid ${message.type === 'success' ? '#BCF0DA' : '#F8B4B4'}`,
+            padding: '0.85rem 1rem',
+            borderRadius: 'var(--radius-sm)',
+            marginBottom: '1.25rem',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+          }}
+        >
+          {message.text}
         </div>
       )}
 
@@ -99,34 +159,57 @@ export default function SettingsPage() {
 
       {/* Push Notifications */}
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>🔔 Push Reminders</h2>
+        <h2 className={styles.sectionTitle}>🔔 Push Reminders (PWA)</h2>
         <p className={styles.sectionDesc}>
-          Get timely alerts at 48h, 24h, and 6h before deadlines so nothing sneaks up on you.
+          Get alerts at 48h, 24h, and 6h before deadlines so nothing sneaks up on you.
         </p>
 
         <div className={styles.itemRow}>
           <div>
             <div className={styles.itemLabel}>Browser Push Notifications</div>
             <div className={styles.itemHint}>
-              Status: <span className={`${styles.badge} ${pushEnabled ? styles.badgeSuccess : styles.badgeWarning}`}>
+              Permission:{' '}
+              <span
+                className={`${styles.badge} ${
+                  pushEnabled ? styles.badgeSuccess : styles.badgeWarning
+                }`}
+              >
                 {notificationPermission}
               </span>
             </div>
           </div>
           <div
             className={`${styles.toggleSwitch} ${pushEnabled ? styles.toggleSwitchActive : ''}`}
-            onClick={handleTogglePush}
+            onClick={pushLoading ? undefined : handleTogglePush}
             role="switch"
             aria-checked={pushEnabled}
+            style={{ opacity: pushLoading ? 0.6 : 1 }}
           >
-            <div className={`${styles.toggleThumb} ${pushEnabled ? styles.toggleThumbActive : ''}`} />
+            <div
+              className={`${styles.toggleThumb} ${
+                pushEnabled ? styles.toggleThumbActive : ''
+              }`}
+            />
           </div>
         </div>
 
-        <div className={styles.itemRow}>
+        {pushEnabled && (
+          <button
+            type="button"
+            className={styles.testBtn}
+            onClick={handleSendTestPush}
+            disabled={testPushLoading}
+          >
+            {testPushLoading ? 'Sending...' : '🔔 Send Test Notification'}
+          </button>
+        )}
+
+        <div className={styles.itemRow} style={{ marginTop: '0.75rem' }}>
           <div>
             <div className={styles.itemLabel}>Quiet Hours</div>
-            <div className={styles.itemHint}>Reminders arriving during this window are deferred until morning.</div>
+            <div className={styles.itemHint}>
+              Reminders arriving during this window are deferred until morning.
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input
@@ -143,6 +226,22 @@ export default function SettingsPage() {
               onChange={(e) => setQuietEnd(e.target.value)}
             />
           </div>
+        </div>
+      </section>
+
+      {/* Progressive Web App Install Instructions */}
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>📱 App Installation (PWA)</h2>
+        <p className={styles.sectionDesc}>
+          Install Kheyal on your Android, iOS, or laptop homescreen for the full native app experience and reliable notification display.
+        </p>
+        <div className={styles.installGuide}>
+          <strong>How to install:</strong>
+          <ol>
+            <li>On Android Chrome: Tap menu (⋮) $\rightarrow$ <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
+            <li>On iPhone Safari: Tap Share button ($\uparrow$) $\rightarrow$ scroll down $\rightarrow$ <strong>"Add to Home Screen"</strong>.</li>
+            <li>On Desktop Chrome/Edge: Click the install icon ($\oplus$) in the address bar.</li>
+          </ol>
         </div>
       </section>
 

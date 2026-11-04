@@ -126,4 +126,10 @@ export const api = {
       body: JSON.stringify({ endpoint }),
     });
   },
+
+  async sendTestPush(): Promise<{ success: boolean; message: string; deliveredCount: number }> {
+    return request('/push/test', {
+      method: 'POST',
+    });
+  },
 };

@@ -114,6 +114,47 @@
   transform: translateX(1.25rem);
 }
 
+.testBtn {
+  margin-top: 1rem;
+  background-color: var(--color-lavender-light);
+  color: var(--color-lavender-dark);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1px solid var(--color-lavender);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.testBtn:hover {
+  background-color: var(--color-lavender);
+  color: #FFFFFF;
+}
+
+.testBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.installGuide {
+  background-color: var(--color-paper);
+  border: 1px dashed var(--color-paper-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+}
+
+.installGuide ol {
+  margin-left: 1.25rem;
+  margin-top: 0.35rem;
+}
+
 .input {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-paper-border);
