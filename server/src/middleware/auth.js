@@ -39,3 +39,4 @@ module.exports = {
   requireAuth,
   SESSION_COOKIE_NAME,
 };
+

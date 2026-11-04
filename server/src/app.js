@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const { errorHandler } = require('./middleware/errorHandler');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
+const deadlineRoutes = require('./routes/deadlineRoutes');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(cookieParser());
 // Route registration
 app.use('/health', healthRoutes);
 app.use('/auth', authRoutes);
+app.use('/deadlines', deadlineRoutes);
 
 // 404 Not Found handler
 app.use((req, res) => {
@@ -32,3 +34,4 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 module.exports = app;
+
