@@ -65,8 +65,18 @@ const deadlineQuerySchema = z.object({
   subject: z.string().trim().optional(),
 });
 
+const parseDeadlineSchema = z.object({
+  text: z
+    .string({ required_error: 'Text is required' })
+    .trim()
+    .min(1, 'Text cannot be empty'),
+  timezone: z.string().optional(),
+});
+
 module.exports = {
   createDeadlineSchema,
   updateDeadlineSchema,
   deadlineQuerySchema,
+  parseDeadlineSchema,
 };
+
