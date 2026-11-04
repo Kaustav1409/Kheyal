@@ -2,19 +2,28 @@ const { Pool } = require('pg');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
+const isProduction = process.env.NODE_ENV === 'production';
+const useSsl =
+  process.env.DATABASE_SSL === 'true' ||
+  (isProduction && Boolean(process.env.DATABASE_URL));
+
 const connectionConfig = process.env.DATABASE_URL
-  ? { connectionString: process.env.DATABASE_URL }
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+    }
   : {
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432', 10),
       database: process.env.DB_NAME || 'kheyal_dev',
       user: process.env.DB_USER || 'kheyal_app',
       password: process.env.DB_PASSWORD || 'kheyal_dev_secret',
+      ...(process.env.DATABASE_SSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
     };
 
 const pool = new Pool({
   ...connectionConfig,
-  max: 10,
+  max: parseInt(process.env.DB_POOL_MAX || '10', 10),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
 });
@@ -47,4 +56,3 @@ module.exports = {
   getClient,
   close,
 };
-

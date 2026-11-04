@@ -13,7 +13,6 @@ Format: one row per decision; status is **Open**, **Decided**, or **Deferred**.
 | D-01 | Working name — domain, social handle, and trademark check | "Kheyal" is the current working name. No check done yet. | Open | — |
 | D-04 | Default start-by buffer | How many hours/minutes to subtract from (due − effort) for suggested start-by time. Default 2h proposed in PRD. | Open | — |
 | D-05 | Quiet-hours rule for push reminders | Whether reminders scheduled to fire between 23:00–07:00 are held or shifted earlier. Default 23:00 to 07:00. | Open | — |
-| D-10 | Backend and database hosting | Platform for persistent deployment (Railway, Render, Fly.io, etc.). | Open | — |
 | D-12 | Old Resend keys rotated + old repo archived | Rotation and archiving confirmation. | Open | — |
 | D-13 | Repository visibility | The GitHub repo is currently **public**. Must remain free of any real credentials or secret values. | Open | — |
 
@@ -29,6 +28,7 @@ Format: one row per decision; status is **Open**, **Decided**, or **Deferred**.
 | D-07 | Test runner | 2026-11-04 | Vitest with `--globals` and Supertest for fast, native ESM/CommonJS backend testing. 57 passing tests across 5 test suites. | Project Owner |
 | D-08 | Backend language | 2026-11-04 | Node.js + Express using CommonJS JavaScript initially. | Project Owner (Clean-slate directive §3) |
 | D-09 | Next.js router style | 2026-11-04 | Next.js App Router with TypeScript and React 18 in `client/src/app/`. | Project Owner |
+| D-10 | Backend and database hosting | 2026-11-05 | Frontend: Vercel with Next.js App Router. Backend: Persistent Node.js hosting (Render / Railway / VPS) so `node-cron` reminder scheduler runs 24/7 without sleeping. Database: Managed PostgreSQL (Neon / Supabase) with SSL support. Same-origin rewrite proxy on Vercel routes `/api/:path*` to the persistent backend, preserving HttpOnly session cookies. | Project Owner (Milestone 9) |
 | D-11 | Brand tagline and tone | 2026-11-04 | Tagline: **"Socho. Plan karo. Kar dikhao."** Supporting line: **"Notes, tasks aur deadlines — sab ek jagah."** Tone: natural, student-friendly, non-guilt-inducing Hinglish. | Project Owner (Clean-slate directive §1) |
 
 ---
