@@ -21,6 +21,17 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// Root welcoming endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    name: 'Kheyal API',
+    tagline: 'Plan Smart. Move Forward. / Socho. Plan karo. Kar dikhao.',
+    status: 'running',
+    frontend: frontendOrigin,
+    health: '/health',
+  });
+});
+
 // Route registration
 app.use('/health', healthRoutes);
 app.use('/auth', authRoutes);
@@ -36,4 +47,3 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 module.exports = app;
-
