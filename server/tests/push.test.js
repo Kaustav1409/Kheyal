@@ -43,8 +43,8 @@ describe('Milestone 8: Push Notification Endpoints & Test Dispatch', () => {
   const dummySub = {
     endpoint: `https://fcm.googleapis.com/fcm/send/test_token_${Date.now()}`,
     keys: {
-      p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QT9AcDnVuIxqZhp0cg1bjwt30rNNoW7KGmnx5M92ubvn7G88',
-      auth: 'tBHItJI5svbpez7KI4CCXg',
+      p256dh: 'test_mock_dummy_p256dh_key',
+      auth: 'test_mock_dummy_auth_key',
     },
   };
 
