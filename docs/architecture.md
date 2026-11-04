@@ -1,158 +1,134 @@
-# Kheyal — Architecture
+# Kheyal — System Architecture
 
-Phase A (deadline MVP). See [decisions.md](decisions.md) for the reasoning behind each choice (IDs like `D-04`).
+**Product:** Kheyal  
+**Tagline:** Socho. Plan karo. Kar dikhao.  
+**Supporting line:** Notes, tasks aur deadlines — sab ek jagah.  
+**Source of Truth:** [`docs/PRD.md`](PRD.md) and [`docs/decisions.md`](decisions.md)
 
-## 1. System overview
+---
 
-```mermaid
-flowchart LR
-  subgraph Device["Student's phone / laptop"]
-    UI["Next.js PWA (React + TS)"]
-    SW["Service worker<br/>(shows push, handles taps)"]
-  end
-  subgraph Vercel
-    NX["Next.js server<br/>rewrites /api/* →"]
-  end
-  subgraph Backend["Persistent Node host"]
-    API["Express API<br/>auth · validation · deadlines · ranking"]
-    CRON["Reminder scheduler<br/>(node-cron, every minute)"]
-  end
-  DB[("PostgreSQL<br/>schema: kheyal")]
-  PUSH["Browser push services<br/>(FCM, Mozilla, Apple)"]
+## 1. High-Level System Architecture
 
-  UI -- "HTTPS, cookie" --> NX
-  NX -- "HTTPS proxy" --> API
-  API -- "parameterised SQL" --> DB
-  CRON -- "claim due reminders" --> DB
-  CRON -- "web-push + VAPID" --> PUSH
-  PUSH -- "push message" --> SW
-  SW -- "notification tap opens task" --> UI
-```
-
-Key rules:
-
-1. The browser **never** talks to PostgreSQL, and never directly to Express in production — only to the Next.js origin (`D-04`).
-2. Next.js contains **no business logic**. It renders UI and proxies `/api/*`.
-3. All validation, ownership checks, ranking, parsing and reminder logic live in Express.
-4. Reminder **timing** is server-side. The service worker is not a clock; it only displays pushes and handles clicks.
-
-## 2. Backend layers
+Kheyal is built as a cleanly decoupled monorepo comprising a Next.js frontend, a Node.js Express backend, and a PostgreSQL relational database.
 
 ```text
-backend/src/
-├── server.js          # starts HTTP server + scheduler, graceful shutdown
-├── app.js             # builds the Express app (imported by tests without listening)
-├── config/            # env parsing (Zod), db pool, constants
-├── middleware/        # auth, origin check (CSRF), rate limits, error handler
-├── routes/            # URL → controller wiring only
-├── controllers/       # thin: read validated input, call service, shape response
-├── validators/        # Zod schemas for bodies / params / queries
-├── services/          # business logic: auth, deadlines, parsing, ranking, reminders, push
-├── repositories/      # the ONLY place SQL lives; always parameterised, always user-scoped
-├── jobs/              # reminder scheduler tick
-└── utils/             # small pure helpers (time maths, errors)
+┌────────────────────────────────────────────────────────┐
+│                   Next.js Client (PWA)                │
+│                 (Deployed to Vercel)                   │
+│                                                        │
+│  - App Router pages & responsive layouts               │
+│  - Notebook Design System (Ink, Paper, Lavender, Peach)│
+│  - Natural-language deadline capture with preview      │
+│  - Prioritized "Do this next" & "All deadlines" views  │
+│  - Service Worker (Push events, notifications, cache)  │
+└───────────────────────────┬────────────────────────────┘
+                            │
+               HTTPS / JSON API Requests
+               (HttpOnly Session Cookies)
+                            │
+┌───────────────────────────▼────────────────────────────┐
+│                  Express Backend (API)                 │
+│                 (Persistent Node.js)                   │
+│                                                        │
+│  - Authentication & Database-backed Session Engine     │
+│  - Zod Request Validation & Ownership Enforcement      │
+│  - Natural-Language Parsing (chrono-node + heuristics) │
+│  - Prioritization Engine (Slack & Start-by calculation)│
+│  - Background Scheduler (node-cron + Web Push / VAPID) │
+└───────────────────────────┬────────────────────────────┘
+                            │
+             Parameterized SQL via pg.Pool
+             (Least-privilege role: kheyal_app)
+                            │
+┌───────────────────────────▼────────────────────────────┐
+│                    PostgreSQL 18                       │
+│                                                        │
+│  - users (accounts, password hashes, timezones)        │
+│  - sessions (hashed tokens, 7-day sliding expiry)      │
+│  - deadlines (tasks, UTC due timestamps, effort)       │
+│  - reminders (48h/24h/6h, lifecycle status, attempts) │
+│  - push_subscriptions (browser VAPID endpoints)       │
+└────────────────────────────────────────────────────────┘
 ```
 
-Request lifecycle:
+---
 
-```text
-request → helmet (security headers) → JSON body limit → origin check (mutations)
-        → rate limit (auth routes) → authenticate (cookie → session → user)
-        → Zod validation → controller → service → repository (SQL)
-        → JSON envelope response  |  error handler (safe message, no stack/SQL)
-```
+## 2. Separation of Responsibilities
 
-## 3. Authentication flow (`D-01`…`D-05`)
+### Client (`client/`)
+- Pure client-side UI rendering, forms, and optimistic interaction states.
+- Service Worker registration, push subscription negotiation with the browser, and notification click handling.
+- **Strict Rule:** No database queries and no business logic duplication inside Next.js API routes. All application data flows through the Express API.
 
-```mermaid
-sequenceDiagram
-  participant B as Browser
-  participant N as Next.js (proxy)
-  participant E as Express
-  participant P as PostgreSQL
-  B->>N: POST /api/auth/login {email, password}
-  N->>E: POST /auth/login
-  E->>P: SELECT user by email
-  E->>E: bcrypt.compare(password, hash)
-  E->>E: token = 32 random bytes
-  E->>P: INSERT session (sha256(token), expires_at = now+7d)
-  E-->>B: 200 + Set-Cookie kheyal_session=token (HttpOnly, Secure, SameSite=Lax)
-  B->>N: GET /api/deadlines (cookie sent automatically)
-  N->>E: GET /deadlines (cookie forwarded)
-  E->>P: SELECT session WHERE token_hash = sha256(cookie) AND not expired
-  E->>P: (≤ once/hour) extend expires_at
-  E-->>B: 200 user's deadlines only
-```
+### Server (`server/`)
+- All business logic lives in Express.
+- Authentication, authorization, and ownership checks on every protected route.
+- Parsing deadline text into structured preview objects (does not save until explicit confirmation).
+- Dynamic calculation of urgency slack and suggested start-by times.
+- Background worker for atomic claiming (`FOR UPDATE SKIP LOCKED`) and dispatch of push notifications via web-push.
+- PostgreSQL database access exclusively using parameterized queries.
 
-## 4. Deadline capture flow
+---
 
-```text
-"DBMS assignment due 25/10 5pm 6h"
-   │  POST /deadlines/parse          (no DB writes)
-   ▼
-chrono-node en-GB + effort regex + title cleanup
-   ▼
-Preview: title, due (local + UTC), hasDueTime, effort, warnings[], reminder preview
-   │  user reviews / edits / confirms
-   ▼
-POST /deadlines (validated again by Zod — the client is never trusted)
-   ▼
-Transaction: INSERT deadline → compute reminder times (offsets, quiet hours, skip past) → INSERT reminders
-```
+## 3. Core Engine Specifications
 
-## 5. Reminder lifecycle
+### A. Authentication & Session Architecture (D-03)
+1. **Registration/Login:** Passwords hashed with `bcrypt` (salt rounds >= 10). Plaintext passwords are never logged or stored.
+2. **Session Generation:** On successful authentication, the server generates a cryptographically secure 256-bit random session token (`crypto.randomBytes(32).toString('hex')`).
+3. **Database Storage:** The server computes `SHA-256(token)` and stores only the resulting hash in the `sessions` table alongside `user_id`, `created_at`, `last_activity_at`, and `expires_at` (now + 7 days).
+4. **Cookie Delivery:** The raw token is sent to the client in an `HttpOnly`, `SameSite=Lax` (or `None` with `Secure` in production cross-site scenarios), `Secure` persistent cookie. LocalStorage is never used for session credentials.
+5. **Sliding Expiration:** Qualifying user requests refresh `expires_at` to maintain a rolling 7-day window.
+6. **Revocation:** Logout explicitly revokes the session row in PostgreSQL (`revoked_at = NOW()`), immediately invalidating the session server-side.
+7. **Google OAuth:** Backend verifies the Google OAuth ID token, matches/links the account by verified email, and provisions a database-backed session.
 
-```mermaid
-stateDiagram-v2
-  [*] --> pending: deadline created / due time changed
-  pending --> cancelled: completed, edited, or quiet-hours/timezone recalculation
-  pending --> skipped: stale (> 30 min late), deadline passed,\nnotifications off, or no subscriptions
-  pending --> sending: scheduler claims row (attempts + 1)
-  sending --> sent: ≥ 1 push service accepted
-  sending --> pending: transient failure, attempts < 3 (retry +1 / +5 min)\nor stuck > 5 min
-  sending --> failed: attempts = 3 or permanent error
-  sent --> [*]
-  failed --> [*]
-  cancelled --> [*]
-  skipped --> [*]
-```
+### B. Natural-Language Deadline Parsing (chrono-node)
+- Day-first date parsing (e.g., `05/11` is 5th November, not 11th May).
+- Local timezone awareness supplied by the client.
+- Ambiguous dates produce explicit parsing warnings requiring user selection.
+- Preview contract: The parser returns interpreted `title`, `subject`, `due_at`, `has_due_time`, and `effort_hours`. It **never** writes to the database until the user explicitly confirms the preview.
 
-Deleting a deadline removes its reminder rows entirely (`ON DELETE CASCADE`, `D-17`).
+### C. Prioritization Engine ("Do This Next")
+Urgency is determined by dynamic slack calculation computed on read:
 
-### Scheduler tick (every minute)
+$$\text{slack} = \text{hours until due} - \text{estimated hours remaining}$$
 
-1. **Recover** rows stuck in `sending` > 5 min → `pending`.
-2. **Expire** pending rows past the grace window or past their deadline → `skipped`.
-3. **Claim** up to N due rows atomically (`FOR UPDATE SKIP LOCKED` → `sending`).
-4. For each claimed row: load the user's preferences and subscriptions, send via `web-push`, record outcome (`sent` / retry / `failed`), delete subscriptions that return 404/410.
+Rules:
+1. **Lower slack ranks first** (least spare time).
+2. **Tie-breaker:** Earlier due time.
+3. **Completed tasks** are excluded from the ranking.
+4. **Overdue tasks** remain prominently displayed with an overdue indicator.
+5. **Unknown effort:** Tasks without effort estimates are ranked by due time and display an inline prompt requesting an estimate.
+6. **Date-only deadlines:** Interpreted as due at 23:59 local time for slack calculation, with a clear visual notice that the time is unset.
 
-Atomic claiming is what prevents duplicate notifications — two ticks (or two servers) can never claim the same row.
+### D. Suggested Start-By Engine
+Suggested start time guides student preparation:
 
-## 6. Time handling
+$$\text{start-by} = \text{due time} - \text{estimated effort} - \text{buffer}$$
 
-- Stored: `TIMESTAMPTZ` (UTC). Pool sets `TimeZone=UTC` per connection.
-- API: ISO-8601 strings with `Z`. Date-only input uses `YYYY-MM-DD`.
-- Local maths (23:59, 22:30, 07:00, quiet hours, display) uses the user's IANA timezone via Luxon.
+- Default buffer: 2 hours (configurable in user settings).
+- Date-only deadlines compute start-by based on 23:59 EOD and flag the result as approximate.
+- Presented clearly as a recommendation, not a promise.
 
-## 7. Deployment topology (decided in Milestone 9)
+### E. Reminder System & Web Push Lifecycle
+Reminders are scheduled server-side:
+- **Explicit time deadline:** Exactly 3 reminders: 48h, 24h, and 6h prior to due time.
+- **Date-only deadline:** Exactly 2 reminders: Night before at 22:30 local time, and morning of deadline at 07:00 local time.
+- **Undated tasks:** No reminders scheduled.
+- **Lifecycle Rules:**
+  - Offsets falling in the past at task creation/edit time are skipped.
+  - Completing or deleting a task marks pending reminders cancelled (`cancelled`).
+  - Rescheduling a task cancels existing pending reminders and regenerates new ones.
+  - Scheduler restarts check a short grace window (e.g. 15 minutes); reminders older than the grace window are expired to prevent flood.
+  - Push delivery claims rows atomically (`FOR UPDATE SKIP LOCKED`) and records delivery timestamp, attempts, and error details.
+  - Unregistered or expired push endpoints (HTTP 404/410 from web-push) are automatically cleaned up from `push_subscriptions`.
 
-| Part | Host | Notes |
-|---|---|---|
-| Next.js frontend + proxy | Vercel | `BACKEND_URL` env var for rewrites |
-| Express API + scheduler | Persistent Node host (TBD) | Must not sleep, or reminders stop |
-| PostgreSQL | Managed (e.g. Neon / Supabase, TBD) | Separate least-privilege app role |
+---
 
-## 8. Planned dependencies (installed only in the milestone that needs them)
+## 4. Security Principles
 
-| Package | Milestone | Why |
-|---|---|---|
-| `helmet` | 3 | Sensible security headers, removes `X-Powered-By` |
-| `bcrypt` | 4 | Password hashing (PRD requirement) |
-| `cookie-parser` | 4 | Read the session cookie (Express 5 has no built-in cookie parsing) |
-| `express-rate-limit` | 4 | Login/signup brute-force protection |
-| `chrono-node` | 6 | Natural-language date parsing (PRD) |
-| `luxon` | 6 | Reliable timezone conversion (local 23:59 → UTC, quiet hours) |
-| `web-push` | 8 | VAPID-signed push messages (PRD) |
-| `node-cron` | 8 | Minute-level scheduler (PRD) |
-| `jest`, `supertest` (dev) | 3 | Unit + HTTP integration tests |
-| `next`, `react`, `typescript` | 7 | Frontend (PRD) |
+1. **Authentication on every private route:** Enforced via `requireAuth` middleware validating the hashed session token.
+2. **Tenant/Ownership Isolation:** Every SQL query operating on user data explicitly binds `WHERE user_id = $auth_user_id` or verifies parent deadline ownership.
+3. **Strict Parameterization:** No dynamic string concatenation in SQL queries.
+4. **Zod Validation:** All query parameters, path parameters, and request bodies pass strict schema validation.
+5. **Least-Privilege Database Role:** Application connects via `kheyal_app`, with permissions restricted to CRUD on application tables and sequences. The `postgres` superuser is never used for runtime traffic.
+6. **Public Repository Hygiene:** No credentials, API keys, private keys, or `.env` files are ever committed to version control.

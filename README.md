@@ -1,129 +1,51 @@
 # Kheyal
 
-> **Socho. Plan karo. Kar dikhao.**
+> **Socho. Plan karo. Kar dikhao.**  
 > Notes, tasks aur deadlines — sab ek jagah.
 
-Kheyal is a student-focused productivity workspace. The first release (Phase A) is a focused **deadline-management MVP**: quick deadline capture, reliable reminders (48h / 24h / 6h), a ranked "Do this next" view, estimated effort, and suggested start-by times.
+Kheyal is a student-focused deadline and productivity workspace. The Phase A (MVP) release delivers fast deadline capture, natural-language parsing with preview confirmation, reliable push reminders (48h / 24h / 6h, plus night-before / morning-of for date-only deadlines), an explainable ranked "Do this next" task view based on urgency slack, and suggested start-by times.
 
-> "Kheyal" is a working name. Domain, social-handle, app-store, and trademark availability have **not** been verified.
+Source of truth: [`docs/PRD.md`](docs/PRD.md) (v1.0, 18 Oct 2026).
 
-## Status
+---
 
-Milestone 1 (setup and baseline) — done. Milestone 2 (design and contracts) — documented in [`docs/`](docs/).
+## Current Status
 
-| Area | State |
-|---|---|
-| Backend (Express) | `GET /health` works locally |
-| Database (PostgreSQL 18) | Local `kheyal_dev` reachable via least-privilege role `kheyal_app`; schema designed, not yet migrated |
-| Frontend (Next.js) | Not started |
-| Auth, deadlines, reminders, push | Not started |
+- **Active Milestone:** Milestone 1 (Clean Setup & Architecture Baseline) — **Completed**
+- **Next Milestone:** Milestone 2 (PostgreSQL Foundation & Migrations)
 
-## Tech stack
+| Component | Stack | Status |
+|---|---|---|
+| **Frontend** | Next.js + React + TypeScript in `client/` (PWA, Vercel) | Clean baseline established |
+| **Backend** | Node.js + Express in `server/` (CommonJS) | Clean baseline established |
+| **Database** | PostgreSQL 18.6 (`kheyal_dev`, role `kheyal_app`) | Installed & verified locally |
+| **Specs & Docs** | PRD, Architecture, Database Schema, API Contract | Documented in `docs/` |
 
-- **Frontend:** Next.js + React + TypeScript (planned; hosted on Vercel). Vite is intentionally not used.
-- **Backend:** Node.js + Express (CommonJS), Zod, bcrypt, chrono-node, web-push, node-cron.
-- **Database:** PostgreSQL via `pg` (node-postgres), parameterized SQL only.
+---
 
-## Repository layout
+## Stack (Locked)
+
+- **Frontend:** Next.js, React, TypeScript, CSS Modules, CSS Variables, Service Worker / PWA.
+- **Backend:** Node.js, Express, JavaScript (CommonJS), node-postgres (`pg`), Zod, bcrypt, chrono-node, node-cron, web-push (VAPID).
+- **Database:** PostgreSQL with parameterized SQL only.
+- **Testing:** Supertest, Vitest / Jest.
+
+---
+
+## Repository Structure
 
 ```text
 Kheyal/
-├── backend/
-│   ├── scripts/db/
-│   │   ├── create-app-role.sql   # one-time DB bootstrap (run as postgres)
-│   │   └── check-connection.js   # read-only connectivity diagnostic
-│   ├── src/server.js             # Express entry point
-│   ├── .env.example              # placeholder config template (committed)
-│   └── package.json
-├── docs/
-│   ├── decisions.md              # every decision, decided vs proposed vs open
-│   ├── architecture.md           # components, layers, flows, reminder lifecycle
-│   ├── database.md               # ER diagram, draft DDL, migrations
-│   ├── api-contract.md           # endpoints, payloads, error codes
-│   └── screens.md                # screen flows, UX states, notification copy
-├── .gitattributes
-├── .gitignore
+├── client/          # Next.js frontend application (PWA)
+├── server/          # Express API server & background scheduler
+├── docs/            # Product requirements, architecture, DB schema, API contract
+├── .env.example     # Environment template with safe placeholders
+├── .gitignore       # Strict rules blocking secrets, builds, and dependencies
 └── README.md
 ```
 
-## Local development setup (Windows)
+---
 
-All commands below are **PowerShell**.
+## Security & Secrets Policy
 
-### Prerequisites
-
-- Node.js 22+ and npm
-- Git
-- PostgreSQL 18 (Windows service running on `localhost:5432`)
-
-`psql` is not on PATH by default; the examples call it by full path.
-
-### 1. Install backend dependencies
-
-Working directory: `D:\PROJECTS\Kheyal\backend`
-
-```powershell
-npm install
-```
-
-### 2. Create the database (once)
-
-Working directory: `D:\PROJECTS\Kheyal`
-
-```powershell
-& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h localhost -d postgres -c "CREATE DATABASE kheyal_dev;"
-```
-
-### 3. Create the least-privilege app role (once)
-
-Working directory: `D:\PROJECTS\Kheyal`
-
-```powershell
-& "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h localhost -d kheyal_dev -f backend/scripts/db/create-app-role.sql
-```
-
-You will be prompted for the `postgres` password, then asked to choose a password for `kheyal_app`. The application **never** connects as `postgres`.
-
-### 4. Configure environment variables
-
-Working directory: `D:\PROJECTS\Kheyal\backend`
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Open `backend/.env` and set `PGPASSWORD` to the `kheyal_app` password. `.env` is git-ignored — never commit it.
-
-### 5. Verify the database connection
-
-Working directory: `D:\PROJECTS\Kheyal\backend`
-
-```powershell
-npm run db:check
-```
-
-Expected: `✓ Connected to PostgreSQL`, user `kheyal_app`, schema `kheyal`, and `✓ Not a superuser`.
-
-### 6. Run the API
-
-Working directory: `D:\PROJECTS\Kheyal\backend`
-
-```powershell
-npm run dev
-```
-
-Then open <http://localhost:5000/health>.
-
-## Backend scripts
-
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Start the API with auto-restart (nodemon) |
-| `npm start` | Start the API with plain Node |
-| `npm run db:check` | Read-only PostgreSQL connectivity check |
-
-## Security notes
-
-- Secrets live only in `backend/.env` (git-ignored). `backend/.env.example` contains placeholders only.
-- The app uses the non-superuser `kheyal_app` role, limited to `kheyal_dev` and its own `kheyal` schema.
-- Never paste passwords, tokens, or keys into issues, commits, or chat.
+This repository is **public**. Never commit `.env` files, actual passwords, database connection strings with credentials, private keys, or VAPID secrets. All configuration must be supplied via local environment variables based on `.env.example`.

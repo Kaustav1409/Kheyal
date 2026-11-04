@@ -1,147 +1,88 @@
-# Kheyal — Screen Flows and UX (Phase A)
+# Kheyal — Frontend Screen Specifications
 
-Mobile-first. Four core screens (PRD §9) plus the auth screens needed to reach them.
+**Design System & Theme:** Notebook-inspired, minimal, warm, calm, student-friendly  
+**Color Palette:**
+- **Ink:** `#27272A` (Primary text, dark accents)
+- **Paper:** `#F8F5EF` (Background, light surfaces)
+- **Lavender:** `#8B80A8` (Interactive elements, focus rings, subtle badges)
+- **Peach:** `#E7A18F` (Urgency accent, "Do this next" hero highlights, warnings)
 
-## 1. Design tokens
+---
 
-| Token | Value | Use |
-|---|---|---|
-| `--ink` | `#27272A` | Primary text, icons |
-| `--paper` | `#F8F5EF` | App background (notebook paper) |
-| `--lavender` | `#8B80A8` | Primary accent, focus rings, active nav |
-| `--peach` | `#E7A18F` | Warm highlight: "Do this next" hero, start-by chip |
+## Screen 1 — Add Deadline (`/add` or Modal / Drawer)
 
-Rules:
+### Purpose
+Fast, frictionless deadline capture via natural language or structured fields.
 
-- Body text is always `--ink` on `--paper` (high contrast). Lavender and peach are **accents** — never used for small body text on paper without a contrast check (WCAG AA ≥ 4.5:1 for text).
-- Status is never communicated by colour alone: overdue = icon + label + colour.
-- Notebook feel: faint ruled lines / margin rule on cards, generous spacing, rounded corners, soft shadows.
-- Motion: subtle (150–250 ms), respects `prefers-reduced-motion`.
-- Typography: one clean sans-serif for UI; wordmark "Kheयाl" tested for Devanagari glyph support with a fallback "Kheyal".
+### Layout & Components
+- **Input Mode Selector:** Simple toggle between "One-line" (default) and "Structured Form".
+- **One-line Input:** Prominent input field with placeholder:  
+  *e.g. "Complete DBMS assignment by 25 October at 5 PM"*
+- **Parse Preview Card (Mandatory):**
+  - Displays interpreted Title, Subject chip, Due Date/Time, and Effort.
+  - Ambiguous date warnings (e.g. *"05/11 ko 5 Nov samjha gaya"*).
+  - Date-only warning (e.g. *"Time nahi diya — end of day 11:59 PM maan liya"*).
+  - Every field in the preview is directly editable before confirming.
+- **Action Buttons:**
+  - `Confirm & Save` (Primary button, disabled until parse succeeds).
+  - `Cancel` / `Clear`.
 
-## 2. Navigation
+---
 
-```text
-Mobile (< 768px)                       Desktop (≥ 768px)
-┌───────────────────────────┐          ┌──────┬─────────────────────────┐
-│  Kheyal          (avatar) │          │ Logo │                         │
-│                           │          │      │                         │
-│        screen content     │          │ Next │     screen content      │
-│                           │          │ All  │   (max width ~720px)    │
-│                           │          │ Add  │                         │
-├───────────────────────────┤          │ Set  │                         │
-│ Next   All   (+)   Settings│          └──────┴─────────────────────────┘
-└───────────────────────────┘
- bottom tab bar, (+) = Add               side rail
-```
+## Screen 2 — Do This Next (`/`, Home)
 
-Routes (Next.js app router): `/login`, `/signup`, `/` (Do this next), `/add`, `/deadlines`, `/settings`. Unauthenticated users are redirected to `/login`.
+### Purpose
+Actionable, explainable prioritization view answering: *"What should I work on right now?"*
 
-## 3. Screens
+### Layout & Components
+- **Overdue Banner:** Prominently alerts user if any task is overdue (e.g. *"1 overdue · Physics worksheet"*).
+- **Hero Card (Top Urgency Task):**
+  - Peach accent border/badge: `DO THIS NEXT`.
+  - Task title & Subject tag.
+  - Due time & relative countdown (e.g. *"Due Sun 5:00 PM · 2 din 7 ghante"*).
+  - Estimated effort and calculated suggested start-by time (*"~6h kaam · Start by Sun 9:30 AM"*).
+  - Plain-language explanation for ranking: *"Sabse kam spare time (49.5h slack)"*.
+  - Primary completion button: `[ ✓ Ho gaya ]`.
+  - Undo toast appears for 5 seconds on completion.
+- **Up Next List:**
+  - Ranks remaining active tasks by slack / due date.
+  - Inline prompt for missing effort: `[ Kitne ghante lagenge? ]`.
+- **Empty State:**
+  - Friendly graphic & copy: *"Sab clear! 🎉 Nayi deadline add karo jab aaye."*
 
-### 0. Login / Sign up
+---
 
-- Email, password (show/hide toggle), submit. Timezone captured silently from the browser on signup.
-- Errors inline and friendly: "Email ya password sahi nahi hai."
-- After signup → onboarding hint on the home screen: "Pehli deadline add karo 👇".
+## Screen 3 — All Deadlines (`/deadlines`)
 
-### 1. Add deadline (`/add`)
+### Purpose
+Comprehensive view and management of all student deadlines.
 
-```text
-┌─────────────────────────────────────┐
-│ Kya due hai?                        │
-│ ┌─────────────────────────────────┐ │
-│ │ DBMS assignment due 25/10 5pm 6h│ │
-│ └─────────────────────────────────┘ │
-│ e.g. "OS lab record Friday 9am 2h"  │
-│            [ Preview ]              │
-│ ─────────── or use the form ─────── │
-├─────────────────────────────────────┤
-│ PREVIEW                             │
-│ Title    DBMS assignment     ✎      │
-│ Due      Sun, 25 Oct · 5:00 PM ✎    │
-│ Effort   ~6 hours            ✎      │
-│ Reminders  Fri 5 PM · Sat 5 PM ·    │
-│            Sun 11 AM                │
-│ ⚠ warnings (if any)                 │
-│   [ Edit ]        [ Confirm & save ]│
-└─────────────────────────────────────┘
-```
+### Layout & Components
+- **Segmented Control:** `Upcoming` · `Overdue` · `Completed`
+- **Deadline Card:**
+  - Title, Subject chip, local formatted due date/time, effort badge.
+  - Actions: Edit (opens preview sheet), Complete / Reopen, Delete.
+- **Delete Confirmation:** Dialog explaining *"Delete karein? Iske pending reminders bhi hat jayenge."*
+- **Empty States:** Tailored empty states for each tab with helpful next actions.
 
-Behaviour:
+---
 
-- Two modes: one-line text (default) and structured form (title, subject, date, optional time, effort).
-- **Preview is mandatory**; nothing saves until "Confirm & save".
-- Every preview field is editable before confirming.
-- Warnings are shown plainly, e.g. "Time nahi diya — end of day (11:59 PM) maan liya. Reminders: raat 10:30 aur subah 7:00." / "05/11 ko 5 Nov padha (day/month)."
-- Parse failure: "Date samajh nahi aayi. Try: '25 Oct 5pm' ya form use karo."
-- On save → success toast + navigate to "Do this next".
+## Screen 4 — Settings (`/settings`)
 
-### 2. Do this next (`/`, home)
+### Purpose
+User control over notification preferences, account details, and PWA installation.
 
-```text
-┌─────────────────────────────────────┐
-│ ⚠ 1 overdue · Physics worksheet  ›  │  ← only if overdue exist
-├─────────────────────────────────────┤
-│ DO THIS NEXT                  (peach)│
-│ DBMS assignment                     │
-│ Due Sun 5:00 PM · 2 din 7 ghante    │
-│ ~6h kaam · Start by Sun 9:30 AM*    │
-│ Why: sabse kam spare time (49.5h)   │
-│            [ ✓ Ho gaya ]            │
-├─────────────────────────────────────┤
-│ Up next                             │
-│ 2  OS lab record   Fri 9 AM · 2h    │
-│ 3  Essay draft     Mon · no estimate│
-│                    [ add estimate ] │
-└─────────────────────────────────────┘
-* "Suggestion — buffer 2h. Settings mein badlo."
-```
-
-- Hero card = top ranked non-overdue task, with due time, time remaining, effort, start-by, a short **reason** (explainable ranking) and a completion button.
-- Start-by already passed → "Start-by nikal gaya — abhi shuru karna best rahega" (no guilt).
-- Unknown effort → no start-by; inline "Kitne ghante lagenge?" prompt.
-- Date-only → "Due Sun 25 Oct · time not set" + "add time" link.
-- Completing calls the API immediately and shows a 5-second "Undo" toast; Undo reopens the task (`PATCH status: "active"`), which regenerates its future reminders.
-- Empty state: "Sab clear! 🎉 Nayi deadline add karo jab aaye." + Add button.
-
-### 3. All deadlines (`/deadlines`)
-
-- Segmented control: **Upcoming · Overdue · Completed**.
-- Cards: title, subject chip, due (local), effort, overdue badge (icon + "Overdue" + colour).
-- Actions per card: Complete / Reopen, Edit (sheet with the same form + preview), Delete (confirm dialog: "Delete karein? Iske reminders bhi hat jayenge.").
-- Empty states per tab: Upcoming "Koi upcoming deadline nahi." · Overdue "Kuch overdue nahi — badhiya!" · Completed "Abhi tak kuch complete nahi hua — pehla tick jaldi!".
-
-### 4. Settings (`/settings`)
-
-| Section | Contents |
-|---|---|
-| Notifications | Master toggle; push status (Not supported / Permission needed / Enabled on this device / Blocked — how to fix); "Enable on this device"; "Remove this device"; test notification button |
-| Quiet hours | Toggle, start/end time pickers (default 23:00–07:00), explanation "Is time ke reminders pehle bhej denge." |
-| Planning | Start-by buffer (0–24 h, default 2 h) |
-| Account | Email (read-only), timezone (auto-detected, editable), Log out |
-| Install app | Per-platform PWA guidance: Android Chrome ("Add to Home screen"), iOS Safari (Share → Add to Home Screen, iOS 16.4+ for push), desktop; Samsung battery-optimisation tip |
-
-## 4. Universal states
-
-Every data view has: **loading** (skeleton cards, not spinners everywhere), **empty** (friendly + next action), **error** (plain message + Retry; never raw error text), **success** (short toast). Forms show field-level errors from the API's `fields` object.
-
-## 5. Notification copy (respectful, Hinglish)
-
-| Kind | Title | Body |
-|---|---|---|
-| 48h | DBMS assignment · 2 din baaki | Due Sun 5:00 PM · ~6h kaam. Aaj thoda shuru karein? |
-| 24h | Kal due: DBMS assignment | Suggested start: 9:30 AM. Ho jayega 💪 |
-| 6h | 6 ghante bache: DBMS assignment | Abhi shuru karo toh aaram se ho jayega. |
-| night_before | Kal due: Lab record | Time set nahi hai — subah check kar lena. |
-| morning_of | Aaj due: Lab record | Aaj ka plan isse shuru karein? |
-
-Copy rules: no shaming words ("late", "failed", "lazy"); one notification per reminder; tapping opens the task; titles ≤ 50 chars.
-
-## 6. Accessibility checklist
-
-- All interactive elements keyboard-reachable with visible lavender focus ring.
-- Touch targets ≥ 44 × 44 px.
-- Semantic HTML (`<main>`, `<nav>`, `<button>`, labelled inputs), one `<h1>` per screen.
-- Times shown in words where helpful ("2 din 7 ghante") with exact time also visible.
-- Unique, descriptive `id`s on interactive elements for testing.
+### Layout & Components
+- **Notification Preferences:**
+  - Master push toggle.
+  - Push status indicator: *(Enabled / Permission Needed / Blocked)*.
+  - "Send test notification" button.
+- **Quiet Hours:**
+  - Toggle & start/end time pickers (default 23:00 to 07:00).
+- **Planning Buffer:**
+  - Configurable start-by buffer (default 2.0 hours).
+- **Account Details:**
+  - Display email and detected/configured timezone.
+  - Explicit `Log Out` button (revokes session on server).
+- **PWA Installation Guidance:**
+  - Clear OS-specific installation instructions (Android Chrome, iOS Safari Share → Add to Home Screen).
