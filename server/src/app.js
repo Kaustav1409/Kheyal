@@ -5,6 +5,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 const deadlineRoutes = require('./routes/deadlineRoutes');
+const pushRoutes = require('./routes/pushRoutes');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(cookieParser());
 app.use('/health', healthRoutes);
 app.use('/auth', authRoutes);
 app.use('/deadlines', deadlineRoutes);
+app.use('/push', pushRoutes);
 
 // 404 Not Found handler
 app.use((req, res) => {
