@@ -86,3 +86,4 @@ User control over notification preferences, account details, and PWA installatio
   - Explicit `Log Out` button (revokes session on server).
 - **PWA Installation Guidance:**
   - Clear OS-specific installation instructions (Android Chrome, iOS Safari Share → Add to Home Screen).
+

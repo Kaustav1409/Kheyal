@@ -151,3 +151,4 @@ To prevent unauthorized schema modification or data corruption:
 - Application queries run as `kheyal_app`.
 - Permissions granted: `SELECT`, `INSERT`, `UPDATE`, `DELETE` on all tables, and `USAGE, SELECT` on all sequences.
 - DDL operations (`CREATE`, `ALTER`, `DROP`) are executed only by the migration runner during deployment or setup.
+

@@ -132,3 +132,4 @@ Reminders are scheduled server-side:
 4. **Zod Validation:** All query parameters, path parameters, and request bodies pass strict schema validation.
 5. **Least-Privilege Database Role:** Application connects via `kheyal_app`, with permissions restricted to CRUD on application tables and sequences. The `postgres` superuser is never used for runtime traffic.
 6. **Public Repository Hygiene:** No credentials, API keys, private keys, or `.env` files are ever committed to version control.
+

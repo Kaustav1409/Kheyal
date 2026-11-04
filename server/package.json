@@ -1,0 +1,17 @@
+{
+  "name": "kheyal-server",
+  "version": "1.0.0",
+  "description": "Kheyal backend API and reminder scheduler",
+  "main": "src/server.js",
+  "scripts": {
+    "migrate": "node src/db/migrate.js",
+    "test": "vitest run --globals"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.4"
+  }
+}
