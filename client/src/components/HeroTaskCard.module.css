@@ -1,0 +1,118 @@
+.card {
+  background-color: var(--color-paper-card);
+  border: 2px solid var(--color-peach);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-peach);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(231, 161, 143, 0.3);
+}
+
+.overdueCard {
+  border-color: var(--color-danger);
+  box-shadow: 0 4px 16px rgba(217, 83, 79, 0.2);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.badge {
+  background-color: var(--color-peach);
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+}
+
+.overdueBadge {
+  background-color: var(--color-danger);
+}
+
+.subjectChip {
+  background-color: var(--color-lavender-light);
+  color: var(--color-lavender-dark);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+
+.metaGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+  color: var(--color-ink-light);
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.metaIcon {
+  font-size: 1rem;
+}
+
+.reasonBox {
+  background-color: var(--color-peach-light);
+  border-left: 3px solid var(--color-peach);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.85rem;
+  color: var(--color-peach-dark);
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
+.completeBtn {
+  width: 100%;
+  background-color: var(--color-ink);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+.completeBtn:hover {
+  background-color: #000000;
+  transform: scale(0.99);
+}
+
+.note {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+  text-align: center;
+  margin-top: 0.5rem;
+}

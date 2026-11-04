@@ -1,0 +1,108 @@
+.header {
+  margin-bottom: 2rem;
+}
+
+.greetingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-ink);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--color-ink-muted);
+  margin-top: 0.25rem;
+}
+
+.addBtn {
+  background-color: var(--color-ink);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  transition: background-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.addBtn:hover {
+  background-color: #000000;
+}
+
+.overdueBanner {
+  background-color: #FDE8E8;
+  border-left: 4px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1.15rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.overdueText {
+  color: #9B1C1C;
+  font-weight: 600;
+  font-size: 0.925rem;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sectionCount {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  background-color: var(--color-paper-card);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-paper-border);
+}
+
+.emptyState {
+  background-color: var(--color-paper-card);
+  border: 1px dashed var(--color-paper-border);
+  border-radius: var(--radius-lg);
+  padding: 3.5rem 2rem;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.emptyTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-bottom: 0.5rem;
+}
+
+.emptySubtitle {
+  font-size: 0.95rem;
+  color: var(--color-ink-muted);
+  max-width: 380px;
+  margin: 0 auto 1.5rem auto;
+}
